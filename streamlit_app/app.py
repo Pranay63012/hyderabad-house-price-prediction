@@ -1,57 +1,38 @@
 # streamlit_app/app.py
 """
 Upgraded UI — Hyderabad House Price Estimator
-Replace your existing file with this.
-Run:
-    streamlit run streamlit_app/app.py
+Compatible with Streamlit Cloud deployment.
 """
 
 import os
 import sys
-import importlib.util
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 import time
 
-# -------------------------
-# 1) PROJECT ABSOLUTE PATH
-# -------------------------
-PROJECT_ROOT = r"C:/Users/prana/hyderabad_house_price_prediction"
+# =============================
+# 1) FIX PATHS FOR CLOUD
+# =============================
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "hyderabad.csv")
 MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "best_model.pkl")
 
 sys.path.append(SRC_PATH)
 
-# -------------------------
-# 2) IMPORT UTIL & PREPROCESS (manual)
-# -------------------------
-# utils
-utils_file = os.path.join(SRC_PATH, "utils.py")
-spec_utils = importlib.util.spec_from_file_location("utils", utils_file)
-utils = importlib.util.module_from_spec(spec_utils)
-spec_utils.loader.exec_module(utils)
-prepare_input_df = utils.prepare_input_df
-inverse_log_transform = utils.inverse_log_transform
-format_inr = utils.format_inr
+# Import utils and preprocess (CLOUD-SAFE)
+from utils import prepare_input_df, inverse_log_transform, format_inr
+from preprocess import load_data
 
-# preprocess
-pre_file = os.path.join(SRC_PATH, "preprocess.py")
-spec_pre = importlib.util.spec_from_file_location("preprocess", pre_file)
-preprocess = importlib.util.module_from_spec(spec_pre)
-spec_pre.loader.exec_module(preprocess)
-load_data = preprocess.load_data
-
-# -------------------------
-# 3) STREAMLIT PAGE SETUP & THEME-LIKE STYLING
-# -------------------------
+# =============================
+# 2) STREAMLIT PAGE SETUP
+# =============================
 st.set_page_config(page_title="Hyderabad House Price Estimator",
                    layout="wide",
                    initial_sidebar_state="expanded")
 
-# small CSS for cards
 st.markdown(
     """
     <style>
@@ -73,111 +54,100 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Header
-col1, col2 = st.columns([4,1])
+# =============================
+# 3) HEADER
+# =============================
+col1, col2 = st.columns([4, 1])
 with col1:
     st.title("🏠 Hyderabad House Price Estimator")
-    st.write("Get a market-based estimate instantly. Trained on historical Hyderabad listings.")
-with col2:
-    st.image("https://img.icons8.com/fluency/48/000000/house.png")  # small icon (internet required)
+    st.write("Get an instant market-based house price estimate.")
 
-# -------------------------
-# 4) LOAD DATA AND MODEL
-# -------------------------
+with col2:
+    st.image("https://img.icons8.com/fluency/48/000000/house.png")
+
+# =============================
+# 4) LOAD DATA + MODEL
+# =============================
 @st.cache_data
-def load_cleaned_df(path=DATA_PATH):
-    return load_data(path)
+def load_cleaned_df():
+    return load_data(DATA_PATH)
 
 @st.cache_resource
-def load_model(path=MODEL_PATH):
+def load_model():
     try:
-        m = joblib.load(path)
-        return m
+        return joblib.load(MODEL_PATH)
     except Exception as e:
-        st.error(f"Failed to load model at {path}\nError: {e}")
+        st.error(f"❌ Model load failed: {e}")
         return None
 
 df = load_cleaned_df()
 model = load_model()
 
-# Prepare dropdown options
 locations = sorted(df["Location"].unique().tolist())
 house_types = sorted(df["house_type"].unique().tolist())
 binary = ["Yes", "No"]
 
-# -------------------------
-# 5) SIDEBAR (Inputs)
-# -------------------------
-st.sidebar.header("Input Property Details")
-area = st.sidebar.number_input("Area (sqft)", min_value=200.0, max_value=10000.0, value=1200.0, step=50.0)
-bedrooms = st.sidebar.number_input("No. of Bedrooms", min_value=1, max_value=10, value=2, step=1)
-location = st.sidebar.selectbox("Location", locations, index=0)
-house_type = st.sidebar.selectbox("House Type", house_types, index=0)
-parking = st.sidebar.selectbox("Car Parking", binary, index=0)
-lift = st.sidebar.selectbox("Lift Available", binary, index=0)
-resale = st.sidebar.selectbox("Resale", binary, index=1)
-gated = st.sidebar.selectbox("Gated Community", binary, index=0)
+# =============================
+# 5) SIDEBAR INPUTS
+# =============================
+st.sidebar.header("Property Details")
+
+area = st.sidebar.number_input("Area (sqft)", 200.0, 10000.0, 1200.0, 50.0)
+bedrooms = st.sidebar.number_input("No. of Bedrooms", 1, 10, 2)
+location = st.sidebar.selectbox("Location", locations)
+house_type = st.sidebar.selectbox("House Type", house_types)
+parking = st.sidebar.selectbox("Car Parking", binary)
+lift = st.sidebar.selectbox("Lift Available", binary)
+resale = st.sidebar.selectbox("Resale", binary)
+gated = st.sidebar.selectbox("Gated Community", binary)
 
 predict_btn = st.sidebar.button("Estimate Price")
 
-# -------------------------
-# 6) MAIN AREA: Show EDA/Info + Predict Card
-# -------------------------
-left, right = st.columns([2,1])
+# =============================
+# 6) INFO PANELS
+# =============================
+left, right = st.columns([2, 1])
 
 with left:
     st.subheader("Model Overview")
-    st.write(
-        """
-        This app uses a Stacked Ensemble (RandomForest + XGBoost) trained on Hyderabad real-estate data.
-        Price target is log-transformed during training — predictions are shown in INR (₹).
-        """
-    )
+    st.write("""
+    This app uses a Stacked Ensemble (RandomForest + XGBoost) trained on 
+    Hyderabad real-estate listings. Prices are log-transformed internally.
+    """)
 
-    st.markdown("### Data snapshot")
+    st.markdown("### Data Sample")
     st.dataframe(df.sample(6), use_container_width=True)
 
 with right:
     st.markdown("### Quick Stats")
-    avg_price = inverse_log_transform(df["Price"].mean())
-    median_price = inverse_log_transform(df["Price"].median())
-    st.metric("Average price (dataset)", format_inr(avg_price))
-    st.metric("Median price (dataset)", format_inr(median_price))
+    avg = inverse_log_transform(df["Price"].mean())
+    med = inverse_log_transform(df["Price"].median())
+    st.metric("Average Price", format_inr(avg))
+    st.metric("Median Price", format_inr(med))
 
-# -------------------------
-# 7) PREDICTION & CPU PATCH FOR XGBOOST
-# -------------------------
+# =============================
+# 7) PREDICTION SECTION
+# =============================
 if predict_btn:
     if model is None:
-        st.error("Model not loaded — check models/best_model.pkl")
+        st.error("Model not available!")
     else:
-        # build input
+        # Build input DF
         input_df = prepare_input_df(area, bedrooms, parking, lift, resale, location, house_type, gated)
 
-        # patch xgboost inside pipeline/stacking to avoid gpu_id error
+        # ========== STREAMLIT CLOUD FIX: Force CPU predictor ==========
         try:
-            ensemble = model.named_steps.get("ensemble", None)
-            if ensemble is None:
-                # maybe pipeline step name differs; search for XGB instances
-                for name, step in getattr(model, "named_steps", {}).items():
-                    if "xgb" in name.lower():
+            if hasattr(model, "named_steps"):
+                if "ensemble" in model.named_steps:
+                    ens = model.named_steps["ensemble"]
+                    for name, est in ens.named_estimators_.items():
                         try:
-                            step.set_params(predictor="cpu_predictor")
+                            est.set_params(predictor="cpu_predictor")
                         except:
                             pass
-            else:
-                # patch each named estimator inside stacking
-                for nm, est in getattr(ensemble, "named_estimators_", {}).items():
-                    try:
-                        if hasattr(est, "get_xgb_params"):
-                            p = est.get_xgb_params()
-                            p["predictor"] = "cpu_predictor"
-                    except:
-                        pass
-        except Exception:
+        except:
             pass
 
-        # predict
         try:
             pred_log = model.predict(input_df)[0]
             pred_price = inverse_log_transform(pred_log)
@@ -185,59 +155,63 @@ if predict_btn:
             st.error(f"Prediction failed: {e}")
             raise
 
-        # Show animated success
         st.balloons()
 
-        # Result card
+        # RESULT CARD
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("<div style='display:flex; justify-content:space-between; align-items:center'>", unsafe_allow_html=True)
-        st.markdown(f"<div><div class='subtle'>Estimated Price</div><div class='big-price'>{format_inr(pred_price)}</div></div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='text-align:right'><div class='subtle'>Estimated range</div><div style='font-weight:600'>{format_inr(pred_price*0.85)} — {format_inr(pred_price*1.15)}</div></div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div style="display:flex; justify-content:space-between;">
+                <div>
+                    <div class='subtle'>Estimated Price</div>
+                    <div class='big-price'>{format_inr(pred_price)}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div class='subtle'>Estimated Range</div>
+                    <div style="font-weight:600">{format_inr(pred_price*0.85)} — {format_inr(pred_price*1.15)}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Input summary
+        # Input Summary
         st.write("#### Input Summary")
         st.table(input_df.T)
 
-        # -------------------------
-        # 8) Feature importance (approx): average of estimators that expose importances
-        # -------------------------
-        st.write("#### Feature importance (approx)")
+        # Feature Importance (if available)
+        st.write("#### Feature Importance (approx.)")
         try:
             pre = model.named_steps["preprocessor"]
-            # get feature names
             cat = pre.named_transformers_["cat"]
-            cat_names = cat.get_feature_names_out(["CarParking","LiftAvailable","Resale","Location","house_type","gated_community"])
-            numeric = np.array(["Area","No. of Bedrooms"])
-            feature_names = np.concatenate([cat_names, numeric])
+            cat_names = cat.get_feature_names_out(
+                ["CarParking", "LiftAvailable", "Resale", "Location", "house_type", "gated_community"]
+            )
+            num = np.array(["Area", "No. of Bedrooms"])
+            feat = np.concatenate([cat_names, num])
 
-            # gather importances from estimators in stacking
             ensemble = model.named_steps["ensemble"]
-            importances_list = []
-            for nm, est in getattr(ensemble, "named_estimators_", {}).items():
+            importances = []
+
+            for nm, est in ensemble.named_estimators_.items():
                 if hasattr(est, "feature_importances_"):
-                    importances_list.append(est.feature_importances_)
-            if len(importances_list) == 0:
-                raise ValueError("No estimator exposes feature_importances_")
-            avg_imp = np.mean(importances_list, axis=0)
-            imp_ser = pd.Series(avg_imp, index=feature_names).sort_values(ascending=False).head(12)
-            st.bar_chart(imp_ser)
-        except Exception as e:
-            st.info("Feature importance not available (pipeline shape may differ).")
-            # print exception on debug mode
-            # st.write(e)
+                    importances.append(est.feature_importances_)
 
-# -------------------------
-# 9) FOOTER
-# -------------------------
+            if len(importances):
+                avg_imp = np.mean(importances, axis=0)
+                st.bar_chart(pd.Series(avg_imp, index=feat).sort_values(ascending=False).head(12))
+            else:
+                st.info("Feature importances unavailable.")
+        except Exception:
+            st.info("Feature importance could not be computed.")
+
+# =============================
+# 8) FOOTER
+# =============================
 st.write("---")
-footer_col1, footer_col2 = st.columns([3,1])
-with footer_col1:
+c1, c2 = st.columns([3,1])
+with c1:
     st.write("**Developed by Pranay Rachakonda** — AIML | Hyderabad")
-    st.write("Project: Hyderabad House Price Estimator — data-driven predictions.")
-with footer_col2:
-    st.write("")
-
-# End of file
+    st.write("Hyderabad House Price Estimator — Machine Learning Project")
 
