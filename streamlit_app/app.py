@@ -11,7 +11,7 @@ import joblib
 # ------------------------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
-DATA_PATH = os.path.join(PROJECT_ROOT, "Data", "hyderabad.csv")
+DATA_PATH = os.path.join(PROJECT_ROOT, "data", "hyderabad.csv")
 MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "best_model.pkl")
 
 sys.path.append(SRC_PATH)
