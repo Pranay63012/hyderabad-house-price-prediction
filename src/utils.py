@@ -1,41 +1,34 @@
 # src/utils.py
-"""
-Utility functions used by Streamlit app and scripts.
-"""
-
+import pandas as pd
 import numpy as np
 
-def inverse_log_transform(y_log):
-    """Inverse of log1p -> returns original scale (float)."""
-    return np.expm1(y_log)
-
-def format_inr(amount):
-    """
-    Format number as Indian-style currency string.
-    Example: 1250000 -> '₹ 12,50,000'
-    """
-    try:
-        val = int(round(amount))
-    except:
-        val = amount
-    s = f"{val:,}"
-    return f"₹ {s}"
+def yesno_to_int(value):
+    """Convert Yes/No to 1/0."""
+    if isinstance(value, str):
+        return 1 if value.lower() == "yes" else 0
+    return value
 
 def prepare_input_df(area, bedrooms, parking, lift, resale, location, house_type, gated):
-    """
-    Build a single-row DataFrame from user inputs in the same order
-    as the training X.
-    """
-    import pandas as pd
+    """Prepare a single-row DF identical to model training structure."""
+    
     row = {
-        "CarParking": [parking],
-        "LiftAvailable": [lift],
-        "Resale": [resale],
-        "Location": [location],
-        "house_type": [house_type],
-        "gated_community": [gated],
-        "Area": [float(area)],
-        "No. of Bedrooms": [int(bedrooms)]
+        "Area": float(area),
+        "No. of Bedrooms": int(bedrooms),
+        "CarParking": yesno_to_int(parking),
+        "LiftAvailable": yesno_to_int(lift),
+        "Resale": yesno_to_int(resale),
+        "Location": location,
+        "house_type": house_type,
+        "gated_community": yesno_to_int(gated)
     }
-    return pd.DataFrame(row)
+    
+    return pd.DataFrame([row])
 
+def inverse_log_transform(log_val):
+    """Inverse of log(price) = exp(value)."""
+    return float(np.exp(log_val))
+
+def format_inr(amount):
+    """Format INR nicely."""
+    amount = float(amount)
+    return "₹{:,.0f}".format(amount)
