@@ -1,14 +1,14 @@
 # streamlit_app/app.py
-
 import os
 import sys
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 
-# -----------------------------------------------------
-# PATHS
-# -----------------------------------------------------
+# ------------------------------
+# PATH SETUP
+# ------------------------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "hyderabad.csv")
@@ -19,110 +19,86 @@ sys.path.append(SRC_PATH)
 from preprocess import load_data
 from utils import prepare_input_df, inverse_log_transform, format_inr
 
-# -----------------------------------------------------
+# ------------------------------
 # PAGE CONFIG
-# -----------------------------------------------------
+# ------------------------------
 st.set_page_config(
-    page_title="Hyderabad House Price Estimator",
-    page_icon="🏠",
+    page_title="HYDERABAD HOUSE PRICE ESTIMATOR",
     layout="wide",
 )
 
-# -----------------------------------------------------
-# PREMIUM STYLING
-# -----------------------------------------------------
-st.markdown("""
-<style>
+# ------------------------------
+# CUSTOM THEMING (LIGHT RED + BLACK)
+# ------------------------------
+st.markdown(
+    """
+    <style>
+        body {
+            background-color: #0e0e0e;
+            color: #ffffff;
+        }
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&family=Inter:wght@300;400;600;800&display=swap');
+        .title-text {
+            font-size: 48px;
+            font-weight: 900;
+            text-align: center;
+            color: #ff6b6b;
+            letter-spacing: 2px;
+            margin-bottom: -10px;
+        }
 
-html, body, [class*="css"] {
-    font-family: 'Poppins', sans-serif !important;
-}
+        .sub-text {
+            text-align: center;
+            font-size: 20px;
+            color: #cccccc;
+        }
 
-.main-header {
-    font-size: 60px;
-    font-weight: 900;
-    background: linear-gradient(90deg, #00f7ff, #00ffa0, #00ffea, #68ffd2);
-    -webkit-background-clip: text;
-    color: transparent;
-    animation: shine 4s infinite linear;
-    text-align: center;
-    margin-bottom: -10px;
-}
+        .price-box {
+            background: #1d1d1d;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #ff6b6b;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
 
-@keyframes shine {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.35); }
-}
+        .price-text {
+            font-size: 36px;
+            font-weight: 800;
+            color: #ff6b6b;
+        }
 
-.sub-header {
-    font-size: 23px;
-    font-weight: 400;
-    color: #dddddd;
-    text-align: center;
-    margin-bottom: 40px;
-}
+        .range-text {
+            font-size: 18px;
+            color: #ffffff;
+        }
 
-.card {
-    background: rgba(20,20,20,0.6);
-    padding: 22px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px);
-    box-shadow: 0px 4px 18px rgba(0,0,0,0.25);
-}
+        .section-header {
+            font-size: 28px;
+            color: #ff6b6b;
+            font-weight: 900;
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+        
+        .stButton button {
+            background-color: #ff6b6b !important;
+            color: black !important;
+            font-weight: bold !important;
+            border-radius: 6px !important;
+            height: 45px !important;
+            border: none !important;
+        }
 
-.price-box {
-    background: linear-gradient(135deg, #004d40, #007f5f);
-    padding: 24px;
-    border-radius: 14px;
-    text-align: center;
-    font-size: 40px;
-    font-weight: 900;
-    color: #00ffcc;
-    border: 2px solid #00ffcc;
-    margin-bottom: 10px;
-}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-.range-box {
-    background: #111;
-    padding: 16px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 22px;
-    color: #8affd4;
-}
-
-.stButton>button {
-    background: linear-gradient(90deg, #00bbff, #00ffaa);
-    color: #000;
-    border: none;
-    padding: 10px 20px;
-    font-size: 18px;
-    font-weight: 700;
-    border-radius: 10px;
-    transition: 0.2s ease-in-out;
-}
-
-.stButton>button:hover {
-    transform: scale(1.04);
-    box-shadow: 0px 0px 12px #00ffe1;
-}
-
-.sidebar-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #00ffd0;
-    margin-bottom: 12px;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------------------------------
+# ------------------------------
 # LOAD DATA & MODEL
-# -----------------------------------------------------
+# ------------------------------
 @st.cache_data
 def load_df():
     return load_data(DATA_PATH)
@@ -138,70 +114,66 @@ locations = sorted(df["Location"].unique().tolist())
 house_types = sorted(df["house_type"].unique().tolist())
 yn = ["Yes", "No"]
 
-# -----------------------------------------------------
-# HEADER
-# -----------------------------------------------------
-st.markdown('<div class="main-header">Hyderabad House Price Estimator</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Accurate AI-powered price estimation for Hyderabad real estate</div>', unsafe_allow_html=True)
+# ------------------------------
+# TITLE
+# ------------------------------
+st.markdown('<div class="title-text">HYDERABAD HOUSE PRICE ESTIMATOR</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Market-based house price estimation for Hyderabad real estate</div>', unsafe_allow_html=True)
 
-# -----------------------------------------------------
-# SIDEBAR
-# -----------------------------------------------------
-with st.sidebar:
-    st.markdown('<div class="sidebar-title">Enter Property Details</div>', unsafe_allow_html=True)
+st.write("")  # spacing
 
-    area = st.number_input("Area (sqft)", 200.0, 20000.0, 1200.0, step=50.0)
-    bedrooms = st.number_input("No. of Bedrooms", 1, 10, 2)
-    location = st.selectbox("Location", locations)
-    house_type = st.selectbox("House Type", house_types)
-    parking = st.selectbox("Car Parking", yn)
-    lift = st.selectbox("Lift Available", yn)
-    resale = st.selectbox("Resale", yn)
-    gated = st.selectbox("Gated Community", yn)
+# ------------------------------
+# SIDEBAR INPUTS
+# ------------------------------
+st.sidebar.header("ENTER PROPERTY DETAILS")
 
-    predict_btn = st.button("Estimate Price", use_container_width=True)
+area = st.sidebar.number_input("Area (sqft)", min_value=200.0, max_value=20000.0, value=1200.0, step=50.0)
+bedrooms = st.sidebar.number_input("No. of Bedrooms", min_value=1, max_value=10, value=2)
+location = st.sidebar.selectbox("Location", locations)
+house_type = st.sidebar.selectbox("House Type", house_types)
+parking = st.sidebar.selectbox("Car Parking", yn)
+lift = st.sidebar.selectbox("Lift Available", yn)
+resale = st.sidebar.selectbox("Resale", yn)
+gated = st.sidebar.selectbox("Gated Community", yn)
 
-# -----------------------------------------------------
+predict_btn = st.sidebar.button("Estimate Price")
+
+# ------------------------------
+# PRICE CONVERSION — CRORE FORMAT
+# ------------------------------
+def convert_to_crore(amount):
+    if amount >= 1e7:
+        return f"{amount/1e7:.2f} Crore"
+    elif amount >= 1e5:
+        return f"{amount/1e5:.2f} Lakh"
+    else:
+        return f"{amount:,.0f}"
+
+# ------------------------------
 # PREDICTION
-# -----------------------------------------------------
+# ------------------------------
 if predict_btn:
+    input_df = prepare_input_df(area, bedrooms, parking, lift, resale, location, house_type, gated)
+    pred_log = model.predict(input_df)[0]
+    pred_price = inverse_log_transform(pred_log)
 
-    try:
-        input_df = prepare_input_df(
-            area, bedrooms, parking, lift, resale,
-            location, house_type, gated
-        )
-    except Exception as e:
-        st.error(f"Input formatting error: {e}")
-        st.stop()
+    lower = pred_price * 0.85
+    upper = pred_price * 1.15
 
-    try:
-        pred_log = model.predict(input_df)[0]
-        pred_price = inverse_log_transform(pred_log)
-    except Exception as e:
-        st.error(f"Prediction failed: {e}")
-        st.stop()
-
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-
-    st.markdown('<div class="price-box">{}</div>'.format(format_inr(pred_price)), unsafe_allow_html=True)
-
-    min_p = pred_price * 0.85
-    max_p = pred_price * 1.15
-
+    st.markdown('<div class="price-box">', unsafe_allow_html=True)
+    st.markdown(f'<div class="price-text">₹ {pred_price:,.0f}  ({convert_to_crore(pred_price)})</div>', unsafe_allow_html=True)
     st.markdown(
-        f'<div class="range-box">Estimated Range: {format_inr(min_p)} — {format_inr(max_p)}</div>',
-        unsafe_allow_html=True
+        f'<div class="range-text">Estimated Range: ₹{lower:,.0f} ({convert_to_crore(lower)}) — ₹{upper:,.0f} ({convert_to_crore(upper)})</div>',
+        unsafe_allow_html=True,
     )
-
     st.markdown('</div>', unsafe_allow_html=True)
 
-    st.write("### Property Summary")
-    st.dataframe(input_df.T, use_container_width=True)
+    # INPUT SUMMARY
+    st.markdown('<div class="section-header">PROPERTY SUMMARY</div>', unsafe_allow_html=True)
+    st.table(input_df.T)
 
-# -----------------------------------------------------
+# ------------------------------
 # FOOTER
-# -----------------------------------------------------
+# ------------------------------
 st.write("---")
-st.caption("Developed by **Pranay Rachakonda** · © 2025 Hyderabad Real Estate AI")
-
+st.write("Developed by **Pranay Rachakonda**")
