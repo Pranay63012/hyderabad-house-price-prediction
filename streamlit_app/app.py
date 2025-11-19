@@ -7,7 +7,7 @@ import pandas as pd
 import joblib
 
 # -----------------------------------------------------
-# PATH SETUP
+# PATHS
 # -----------------------------------------------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_PATH = os.path.join(PROJECT_ROOT, "src")
@@ -24,97 +24,101 @@ from utils import prepare_input_df, inverse_log_transform, format_inr
 # -----------------------------------------------------
 st.set_page_config(
     page_title="Hyderabad House Price Estimator",
-    layout="wide",
     page_icon="🏠",
+    layout="wide",
 )
 
 # -----------------------------------------------------
-# PREMIUM UI STYLING
+# PREMIUM STYLING
 # -----------------------------------------------------
-st.markdown(
-    """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+st.markdown("""
+<style>
 
-        html, body, [class*="css"] {
-            font-family: 'Poppins', sans-serif !important;
-        }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&family=Inter:wght@300;400;600;800&display=swap');
 
-        .main-title {
-            font-size: 52px;
-            font-weight: 900;
-            background: linear-gradient(90deg, #00e5ff, #00ff95, #4dff4d);
-            -webkit-background-clip: text;
-            color: transparent;
-            text-align: center;
-            animation: glow 2.5s ease-in-out infinite alternate;
-        }
+html, body, [class*="css"] {
+    font-family: 'Poppins', sans-serif !important;
+}
 
-        @keyframes glow {
-            from { text-shadow: 0 0 10px #00ffc6; }
-            to   { text-shadow: 0 0 25px #00ffd5; }
-        }
+.main-header {
+    font-size: 60px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #00f7ff, #00ffa0, #00ffea, #68ffd2);
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: shine 4s infinite linear;
+    text-align: center;
+    margin-bottom: -10px;
+}
 
-        .subtitle {
-            font-size: 22px;
-            text-align: center;
-            color: #cccccc;
-            margin-top: -10px;
-            margin-bottom: 25px;
-        }
+@keyframes shine {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.35); }
+}
 
-        .prediction-box {
-            background-color: #0f3d29;
-            padding: 18px;
-            border-radius: 12px;
-            color: white;
-            font-size: 22px;
-            font-weight: 700;
-            text-align: center;
-            margin-top: 20px;
-        }
+.sub-header {
+    font-size: 23px;
+    font-weight: 400;
+    color: #dddddd;
+    text-align: center;
+    margin-bottom: 40px;
+}
 
-        .price-box {
-            background: linear-gradient(135deg, #003300, #00994d);
-            padding: 20px;
-            border-radius: 14px;
-            color: #00ffcc;
-            font-size: 36px;
-            font-weight: 800;
-            text-align: center;
-            border: 2px solid #00ffcc;
-        }
+.card {
+    background: rgba(20,20,20,0.6);
+    padding: 22px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    box-shadow: 0px 4px 18px rgba(0,0,0,0.25);
+}
 
-        .range-box {
-            background-color: #111;
-            padding: 15px;
-            border-radius: 10px;
-            color: #00ffaa;
-            font-size: 22px;
-            text-align: center;
-            margin-top: 10px;
-        }
+.price-box {
+    background: linear-gradient(135deg, #004d40, #007f5f);
+    padding: 24px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 40px;
+    font-weight: 900;
+    color: #00ffcc;
+    border: 2px solid #00ffcc;
+    margin-bottom: 10px;
+}
 
-        .stButton>button {
-            background: linear-gradient(90deg, #0099ff, #00ff99);
-            color: black;
-            font-size: 18px;
-            font-weight: 700;
-            padding: 8px 20px;
-            border-radius: 8px;
-            border: none;
-        }
+.range-box {
+    background: #111;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 22px;
+    color: #8affd4;
+}
 
-        .stButton>button:hover {
-            background: linear-gradient(90deg, #00ffbb, #00e1ff);
-            cursor: pointer;
-            box-shadow: 0px 0px 10px #00ffee;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+.stButton>button {
+    background: linear-gradient(90deg, #00bbff, #00ffaa);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: 10px;
+    transition: 0.2s ease-in-out;
+}
+
+.stButton>button:hover {
+    transform: scale(1.04);
+    box-shadow: 0px 0px 12px #00ffe1;
+}
+
+.sidebar-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #00ffd0;
+    margin-bottom: 12px;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------
 # LOAD DATA & MODEL
@@ -137,14 +141,14 @@ yn = ["Yes", "No"]
 # -----------------------------------------------------
 # HEADER
 # -----------------------------------------------------
-st.markdown('<div class="main-title">Hyderabad House Price Estimator</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">AI-powered estimation based on Hyderabad real estate trends</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Hyderabad House Price Estimator</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Accurate AI-powered price estimation for Hyderabad real estate</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------
-# SIDEBAR INPUTS
+# SIDEBAR
 # -----------------------------------------------------
 with st.sidebar:
-    st.header("Property Details")
+    st.markdown('<div class="sidebar-title">Enter Property Details</div>', unsafe_allow_html=True)
 
     area = st.number_input("Area (sqft)", 200.0, 20000.0, 1200.0, step=50.0)
     bedrooms = st.number_input("No. of Bedrooms", 1, 10, 2)
@@ -178,21 +182,21 @@ if predict_btn:
         st.error(f"Prediction failed: {e}")
         st.stop()
 
-    # Success notice
-    st.markdown('<div class="prediction-box">Prediction Successful!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    # Price
-    st.markdown(f'<div class="price-box">{format_inr(pred_price)}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="price-box">{}</div>'.format(format_inr(pred_price)), unsafe_allow_html=True)
 
-    # Range
     min_p = pred_price * 0.85
     max_p = pred_price * 1.15
+
     st.markdown(
-        f'<div class="range-box">Estimated Range: {format_inr(min_p)} – {format_inr(max_p)}</div>',
-        unsafe_allow_html=True,
+        f'<div class="range-box">Estimated Range: {format_inr(min_p)} — {format_inr(max_p)}</div>',
+        unsafe_allow_html=True
     )
 
-    st.write("### 📘 Input Summary")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("### Property Summary")
     st.dataframe(input_df.T, use_container_width=True)
 
 # -----------------------------------------------------
@@ -200,3 +204,4 @@ if predict_btn:
 # -----------------------------------------------------
 st.write("---")
 st.caption("Developed by **Pranay Rachakonda** · © 2025 Hyderabad Real Estate AI")
+
